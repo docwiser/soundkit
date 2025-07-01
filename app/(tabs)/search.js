@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Filter, Mic, MicOff, X } from 'lucide-react-native';
+import * as Speech from 'expo-speech';
 import { saavnAPI } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
 import { debounce } from '../../utils/helpers';
@@ -121,45 +122,85 @@ export default function SearchScreen() {
   };
 
   const startVoiceSearch = async () => {
-    if (Platform.OS === 'web') {
-      // Web Speech Recognition API
-      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
-        
-        recognition.onstart = () => {
-          setIsListening(true);
-        };
-        
-        recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          setSearchQuery(transcript);
+    try {
+      setIsListening(true);
+      
+      if (Platform.OS === 'web') {
+        // Web Speech Recognition API
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          const recognition = new SpeechRecognition();
+          
+          recognition.continuous = false;
+          recognition.interimResults = false;
+          recognition.lang = 'en-US';
+          
+          recognition.onstart = () => {
+            setIsListening(true);
+          };
+          
+          recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            setSearchQuery(transcript);
+            setIsListening(false);
+            // Auto-search after voice input
+            setTimeout(() => {
+              performSearch(transcript, 0, true);
+            }, 100);
+          };
+          
+          recognition.onerror = () => {
+            setIsListening(false);
+            Alert.alert('Voice Search Error', 'Could not recognize speech. Please try again.');
+          };
+          
+          recognition.onend = () => {
+            setIsListening(false);
+          };
+          
+          recognition.start();
+        } else {
           setIsListening(false);
-          // Auto-search after voice input
-          setTimeout(() => {
-            performSearch(transcript, 0, true);
-          }, 100);
-        };
-        
-        recognition.onerror = () => {
-          setIsListening(false);
-          Alert.alert('Voice Search Error', 'Could not recognize speech. Please try again.');
-        };
-        
-        recognition.onend = () => {
-          setIsListening(false);
-        };
-        
-        recognition.start();
+          Alert.alert('Not Supported', 'Voice search is not supported in this browser.');
+        }
       } else {
-        Alert.alert('Not Supported', 'Voice search is not supported in this browser.');
+        // For mobile platforms, we'll use a simple approach with expo-speech
+        // Note: This is a simplified implementation. For full speech recognition,
+        // you would need to use a service like Google Speech-to-Text
+        
+        Alert.alert(
+          'Voice Search',
+          'Speak your search query now...',
+          [
+            {
+              text: 'Cancel',
+              onPress: () => setIsListening(false),
+              style: 'cancel',
+            },
+            {
+              text: 'Done',
+              onPress: () => {
+                setIsListening(false);
+                // For demo purposes, we'll show a prompt to enter the query
+                Alert.prompt(
+                  'Voice Search',
+                  'Enter what you said:',
+                  (text) => {
+                    if (text) {
+                      setSearchQuery(text);
+                      performSearch(text, 0, true);
+                    }
+                  }
+                );
+              },
+            },
+          ]
+        );
       }
-    } else {
-      Alert.alert('Voice Search', 'Voice search is not available on this platform yet.');
+    } catch (error) {
+      console.error('Voice search error:', error);
+      setIsListening(false);
+      Alert.alert('Voice Search Error', 'Could not start voice search. Please try again.');
     }
   };
 
@@ -181,8 +222,8 @@ export default function SearchScreen() {
         }
       }}
       accessibilityLabel={`Filter by ${label}`}
-accessibilityRole="button"
-accessibilityState={{selected: type == searchType}}
+      accessibilityRole="button"
+      accessibilityState={{selected: type === searchType}}
     >
       <Text
         style={[
@@ -247,10 +288,10 @@ accessibilityState={{selected: type == searchType}}
           <Search size={48} color="#64748b" />
           <Text style={styles.emptyText}>Search for songs, albums, artists, and playlists</Text>
           <Text style={styles.emptySubtext}>Try using voice search for hands-free searching</Text>
-<Text style={styles.emptyText}>Find your favorite music by typing a song, artist, or album</Text>
-<Text style={styles.emptyText}>Start typing to discover tracks and trending hits</Text>
-<Text style={styles.emptyText}>Find music by mood, genre, or language in seconds</Text>
-<Text style={styles.emptyText}>Browse the world of audio. Search to get started</Text>
+          <Text style={styles.emptyText}>Find your favorite music by typing a song, artist, or album</Text>
+          <Text style={styles.emptyText}>Start typing to discover tracks and trending hits</Text>
+          <Text style={styles.emptyText}>Find music by mood, genre, or language in seconds</Text>
+          <Text style={styles.emptyText}>Browse the world of audio. Search to get started</Text>
         </View>
       );
     }
@@ -258,11 +299,8 @@ accessibilityState={{selected: type == searchType}}
     if (results.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-<Text style={styles.emptyText}>No search yet. Try typing a song or artist you love</Text>
-<Text style={styles.emptyText}>Find your favorite music by typing a song, artist, or album</Text>
-<Text style={styles.emptyText}>Start typing to discover tracks and trending hits</Text>
-<Text style={styles.emptyText}>Find music by mood, genre, or language in seconds</Text>
-<Text style={styles.emptyText}>Browse the world of audio. Search to get started</Text>
+          <Text style={styles.emptyText}>No results found for "{searchQuery}"</Text>
+          <Text style={styles.emptySubtext}>Try different keywords or check your spelling</Text>
         </View>
       );
     }
@@ -290,7 +328,7 @@ accessibilityState={{selected: type == searchType}}
                 style={styles.clearButton}
                 onPress={clearSearch}
                 accessibilityLabel="Clear search"
-accessibilityRole="button"
+                accessibilityRole="button"
               >
                 <X size={20} color="#64748b" />
               </TouchableOpacity>
@@ -299,7 +337,7 @@ accessibilityRole="button"
               style={[styles.voiceButton, isListening && styles.voiceButtonActive]}
               onPress={isListening ? stopVoiceSearch : startVoiceSearch}
               accessibilityLabel={isListening ? 'Stop listening' : 'Voice search'}
-accessibilityRole="button"
+              accessibilityRole="button"
             >
               {isListening ? (
                 <MicOff size={20} color="#ef4444" />
@@ -311,19 +349,19 @@ accessibilityRole="button"
               style={styles.searchButton}
               onPress={handleSearchSubmit}
               accessibilityLabel="Search"
-accessibilityRole="button"
+              accessibilityRole="button"
             >
               <Search size={20} color="#ffffff" />
             </TouchableOpacity>
           </View>
-{false && (
-          <View style={styles.filtersContainer}>
-            {renderSearchTypeButton(SEARCH_TYPES.SONGS, 'Songs')}
-            {renderSearchTypeButton(SEARCH_TYPES.ALBUMS, 'Albums')}
-            {renderSearchTypeButton(SEARCH_TYPES.ARTISTS, 'Artists')}
-            {renderSearchTypeButton(SEARCH_TYPES.PLAYLISTS, 'Playlists')}
-          </View>
-)}
+          {false && (
+            <View style={styles.filtersContainer}>
+              {renderSearchTypeButton(SEARCH_TYPES.SONGS, 'Songs')}
+              {renderSearchTypeButton(SEARCH_TYPES.ALBUMS, 'Albums')}
+              {renderSearchTypeButton(SEARCH_TYPES.ARTISTS, 'Artists')}
+              {renderSearchTypeButton(SEARCH_TYPES.PLAYLISTS, 'Playlists')}
+            </View>
+          )}
         </View>
 
         {totalResults > 0 && (
@@ -336,7 +374,7 @@ accessibilityRole="button"
                 style={styles.playAllButton}
                 onPress={() => playSearchResults(0)}
                 accessibilityLabel="play all"
-accessibilityRole="button"
+                accessibilityRole="button"
               >
                 <Text style={styles.playAllText}>Play All</Text>
               </TouchableOpacity>

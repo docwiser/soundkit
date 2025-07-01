@@ -16,8 +16,16 @@ class AudioPlayerService {
     this.currentIndex = 0;
     this.repeat = 'none'; // 'none', 'one', 'all'
     this.shuffle = false;
+    this.settings = null;
     
     this.initializeAudio();
+    this.loadSettings();
+  }
+
+  async loadSettings() {
+    this.settings = await storageService.getSettings();
+    this.playbackSpeed = this.settings.playbackSpeed || 1.0;
+    this.notifyListeners();
   }
 
   async initializeAudio() {
@@ -58,6 +66,43 @@ class AudioPlayerService {
     });
   }
 
+  async getAudioUrl(song, quality = 'medium') {
+    // Check if song is downloaded first
+    const downloadedSongs = await storageService.getDownloadedSongs();
+    const downloadedSong = downloadedSongs.find(s => s.id === song.id);
+    
+    if (downloadedSong && downloadedSong.localUri) {
+      return downloadedSong.localUri;
+    }
+
+    // Get URL based on quality setting
+    const downloadUrls = song.downloadUrl || [];
+    let targetUrl;
+
+    switch (quality) {
+      case 'high':
+        targetUrl = downloadUrls.find(u => u.quality === '320kbps')?.url;
+        break;
+      case 'medium':
+        targetUrl = downloadUrls.find(u => u.quality === '160kbps')?.url;
+        break;
+      case 'low':
+        targetUrl = downloadUrls.find(u => u.quality === '96kbps')?.url;
+        break;
+      default:
+        targetUrl = downloadUrls.find(u => u.quality === '160kbps')?.url;
+    }
+
+    // Fallback to any available URL
+    if (!targetUrl) {
+      targetUrl = downloadUrls.find(u => u.quality === '320kbps')?.url || 
+                 downloadUrls.find(u => u.quality === '160kbps')?.url || 
+                 downloadUrls[0]?.url;
+    }
+
+    return targetUrl;
+  }
+
   async loadSong(song, autoPlay = true) {
     try {
       if (this.sound) {
@@ -66,21 +111,9 @@ class AudioPlayerService {
 
       this.currentSong = song;
       
-      // Check if song is downloaded
-      const downloadedSongs = await storageService.getDownloadedSongs();
-      const downloadedSong = downloadedSongs.find(s => s.id === song.id);
-      
-      let uri;
-      if (downloadedSong && downloadedSong.localUri) {
-        uri = downloadedSong.localUri;
-      } else {
-        // Get the highest quality download URL
-        const downloadUrls = song.downloadUrl || [];
-        const highQualityUrl = downloadUrls.find(u => u.quality === '320kbps') || 
-                              downloadUrls.find(u => u.quality === '160kbps') || 
-                              downloadUrls[0];
-        uri = highQualityUrl?.url;
-      }
+      // Get current settings
+      const settings = await storageService.getSettings();
+      const uri = await this.getAudioUrl(song, settings.audioQuality);
 
       if (!uri) {
         throw new Error('No playable URL found for song');
@@ -90,7 +123,7 @@ class AudioPlayerService {
         { uri },
         { 
           shouldPlay: autoPlay,
-          rate: this.playbackSpeed,
+          rate: settings.playbackSpeed || 1.0,
           volume: this.volume
         },
         this.onPlaybackStatusUpdate.bind(this)
@@ -98,6 +131,7 @@ class AudioPlayerService {
 
       this.sound = sound;
       this.isPlaying = autoPlay;
+      this.playbackSpeed = settings.playbackSpeed || 1.0;
 
       // Add to recently played and playback history
       await storageService.addToRecentlyPlayed(song);
@@ -126,10 +160,12 @@ class AudioPlayerService {
   }
 
   async handleSongEnd() {
+    const settings = await storageService.getSettings();
+    
     if (this.repeat === 'one') {
       await this.seekTo(0);
       await this.play();
-    } else {
+    } else if (settings.autoplay) {
       await this.playNext();
     }
   }
@@ -182,19 +218,38 @@ class AudioPlayerService {
     }
   }
 
-  async rewind(seconds = 10) {
-    const newPosition = Math.max(0, this.position - (seconds * 1000));
+  async rewind(seconds) {
+    const settings = await storageService.getSettings();
+    const rewindDuration = seconds || settings.rewindDuration || 10;
+    const newPosition = Math.max(0, this.position - (rewindDuration * 1000));
     await this.seekTo(newPosition);
   }
 
-  async fastForward(seconds = 30) {
-    const newPosition = Math.min(this.duration, this.position + (seconds * 1000));
+  async fastForward(seconds) {
+    const settings = await storageService.getSettings();
+    const fastForwardDuration = seconds || settings.fastForwardDuration || 10;
+    const newPosition = Math.min(this.duration, this.position + (fastForwardDuration * 1000));
     await this.seekTo(newPosition);
   }
 
   setQueue(songs, startIndex = 0) {
     this.queue = songs;
     this.currentIndex = startIndex;
+    this.notifyListeners();
+  }
+
+  removeFromQueue(index) {
+    if (this.queue.length === 0 || index < 0 || index >= this.queue.length) return;
+
+    // If removing current song, play next
+    if (index === this.currentIndex) {
+      this.playNext();
+    } else if (index < this.currentIndex) {
+      // Adjust current index if removing song before current
+      this.currentIndex--;
+    }
+
+    this.queue.splice(index, 1);
     this.notifyListeners();
   }
 
@@ -260,6 +315,8 @@ class AudioPlayerService {
         targetUrl = downloadUrls.find(u => u.quality === '320kbps')?.url;
       } else if (settings.downloadQuality === 'medium') {
         targetUrl = downloadUrls.find(u => u.quality === '160kbps')?.url;
+      } else {
+        targetUrl = downloadUrls.find(u => u.quality === '96kbps')?.url;
       }
       
       if (!targetUrl) {
@@ -272,6 +329,9 @@ class AudioPlayerService {
 
       const filename = `${song.id}.mp3`;
       const localUri = FileSystem.downloadDirectory + "soundkit/" + filename;
+
+      // Ensure directory exists
+      await FileSystem.makeDirectoryAsync(FileSystem.downloadDirectory + "soundkit/", { intermediates: true });
 
       const download = FileSystem.createDownloadResumable(
         targetUrl,

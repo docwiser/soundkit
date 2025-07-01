@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   Switch,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -26,24 +27,29 @@ import {
 import { router } from 'expo-router';
 import { storageService } from '../services/storage';
 import * as FileSystem from 'expo-file-system';
+import DeviceInfo from 'react-native-device-info';
 import ClearDownloadsModal from '../components/ClearDownloadsModal';
+
 const QUALITY_OPTIONS = [
   { label: 'Low (96kbps)', value: 'low' },
   { label: 'Medium (160kbps)', value: 'medium' },
   { label: 'High (320kbps)', value: 'high' },
 ];
+
 const THUMBNAIL_OPTIONS = [
   { label: 'Small', value: 'small' },
   { label: 'Medium', value: 'medium' },
   { label: 'Large', value: 'large' },
 ];
+
 const DURATION_OPTIONS = [
   { label: '5 seconds', value: 5 },
   { label: '10 seconds', value: 10 },
   { label: '15 seconds', value: 15 },
   { label: '30 seconds', value: 30 },
-  {label: '1minutes', value: 60},
+  { label: '1 minute', value: 60 },
 ];
+
 const SPEED_OPTIONS = [
   { label: '0.5x', value: 0.5 },
   { label: '0.75x', value: 0.75 },
@@ -52,6 +58,7 @@ const SPEED_OPTIONS = [
   { label: '1.5x', value: 1.5 },
   { label: '2x', value: 2.0 },
 ];
+
 export default function SettingsScreen() {
   const [settings, setSettings] = useState({
     audioQuality: 'medium',
@@ -65,10 +72,13 @@ export default function SettingsScreen() {
   });
   const [storageUsage, setStorageUsage] = useState(0);
   const [totalStorage, setTotalStorage] = useState(0);
+  const [freeStorage, setFreeStorage] = useState(0);
   const [showClearDownloads, setShowClearDownloads] = useState(false);
+
   useEffect(() => {
     loadSettings();
     calculateStorageUsage();
+    getDeviceStorageInfo();
   }, []);
 
   const loadSettings = async () => {
@@ -79,6 +89,31 @@ export default function SettingsScreen() {
   const saveSettings = async (newSettings) => {
     setSettings(newSettings);
     await storageService.saveSettings(newSettings);
+  };
+
+  const getDeviceStorageInfo = async () => {
+    try {
+      if (Platform.OS !== 'web') {
+        const totalMemory = await DeviceInfo.getTotalMemory();
+        const freeMemory = await DeviceInfo.getFreeDiskStorage();
+        setTotalStorage(totalMemory);
+        setFreeStorage(freeMemory);
+      } else {
+        // Web fallback - estimate based on navigator.storage if available
+        if ('storage' in navigator && 'estimate' in navigator.storage) {
+          const estimate = await navigator.storage.estimate();
+          setTotalStorage(estimate.quota || 1024 * 1024 * 1024); // 1GB default
+          setFreeStorage((estimate.quota || 1024 * 1024 * 1024) - (estimate.usage || 0));
+        } else {
+          setTotalStorage(1024 * 1024 * 1024); // 1GB default
+          setFreeStorage(512 * 1024 * 1024); // 512MB default
+        }
+      }
+    } catch (error) {
+      console.error('Error getting device storage info:', error);
+      setTotalStorage(1024 * 1024 * 1024); // 1GB default
+      setFreeStorage(512 * 1024 * 1024); // 512MB default
+    }
   };
 
   const calculateStorageUsage = async () => {
@@ -100,8 +135,6 @@ export default function SettingsScreen() {
       }
       
       setStorageUsage(totalSize);
-      // Estimate total available storage (this is a rough estimate)
-      setTotalStorage(totalSize > 0 ? totalSize * 10 : 1024 * 1024 * 1024); // 1GB default
     } catch (error) {
       console.error('Error calculating storage usage:', error);
     }
@@ -122,17 +155,20 @@ export default function SettingsScreen() {
       await storageService.saveDownloadedSongs([]);
       setStorageUsage(0);
       setShowClearDownloads(false);
+      
+      // Refresh storage info
+      await getDeviceStorageInfo();
     } catch (error) {
       console.error('Error clearing downloads:', error);
     }
   };
 
   const formatBytes = (bytes) => {
-    if (bytes === 0) return '0';
+    if (bytes === 0) return '0 B';
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
   const renderSettingSection = (title, children) => (
@@ -160,7 +196,7 @@ export default function SettingsScreen() {
             ]}
             onPress={() => onSelect(option.value)}
             accessibilityLabel={option.label}
-            aria-selected={option.value == currentValue}
+            accessibilityState={{ selected: option.value === currentValue }}
           >
             <Text
               style={[
@@ -175,6 +211,7 @@ export default function SettingsScreen() {
       </View>
     </View>
   );
+
   const renderToggleSetting = (title, icon, value, onToggle, description) => (
     <View style={styles.settingItem}>
       <View style={styles.settingHeader}>
@@ -197,6 +234,7 @@ export default function SettingsScreen() {
       </View>
     </View>
   );
+
   const renderNavigationItem = (title, icon, onPress) => (
     <Pressable 
       style={styles.settingItem} 
@@ -211,6 +249,7 @@ export default function SettingsScreen() {
       </View>
     </Pressable>
   );
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -225,6 +264,7 @@ export default function SettingsScreen() {
         <Text style={styles.headerTitle}>Settings</Text>
         <View style={styles.placeholder} />
       </View>
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {renderSettingSection(
           'Audio Quality',
@@ -308,7 +348,13 @@ export default function SettingsScreen() {
                   <View style={styles.settingTextContainer}>
                     <Text style={styles.settingTitle}>Storage Usage</Text>
                     <Text style={styles.settingDescription}>
-                      {formatBytes(storageUsage)} of {formatBytes(totalStorage)} used for downloads
+                      Downloads: {formatBytes(storageUsage)}
+                    </Text>
+                    <Text style={styles.settingDescription}>
+                      Free space: {formatBytes(freeStorage)}
+                    </Text>
+                    <Text style={styles.settingDescription}>
+                      Total storage: {formatBytes(totalStorage)}
                     </Text>
                   </View>
                 </View>

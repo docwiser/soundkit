@@ -10,6 +10,7 @@ import {
   Modal,
   Share as NativeShare,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,6 +25,7 @@ import SongItem from '../components/SongItem';
 import RemoveDownloadModal from '../components/RemoveDownloadModal';
 import SpeedSelectionModal from '../components/SpeedSelectionModal';
 import AddToPlaylistModal from '../components/AddToPlaylistModal';
+import AudioQualityModal from '../components/AudioQualityModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -52,9 +54,12 @@ export default function PlayerScreen() {
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showSpeedSelection, setShowSpeedSelection] = useState(false);
   const [showAddToPlaylist, setShowAddToPlaylist] = useState(false);
+  const [showAudioQuality, setShowAudioQuality] = useState(false);
+  const [settings, setSettings] = useState(null);
 
   useEffect(() => {
     const unsubscribe = audioPlayer.addListener(setPlayerState);
+    loadSettings();
     return unsubscribe;
   }, []);
 
@@ -71,6 +76,11 @@ export default function PlayerScreen() {
       setSeekPosition(playerState.position);
     }
   }, [playerState.position, seeking]);
+
+  const loadSettings = async () => {
+    const currentSettings = await storageService.getSettings();
+    setSettings(currentSettings);
+  };
 
   const checkFavoriteStatus = async () => {
     const favorites = await storageService.getFavorites();
@@ -200,8 +210,25 @@ export default function PlayerScreen() {
     setShowSpeedSelection(false);
   };
 
+  const handleRewind = () => {
+    audioPlayer.rewind();
+  };
+
+  const handleFastForward = () => {
+    audioPlayer.fastForward();
+  };
+
+  const removeFromQueue = (index) => {
+    audioPlayer.removeFromQueue(index);
+  };
+
   const playRecommendation = (song, index) => {
     audioPlayer.setQueue(recommendations, index);
+    audioPlayer.loadSong(song);
+  };
+
+  const playQueueSong = (song, index) => {
+    audioPlayer.currentIndex = index;
     audioPlayer.loadSong(song);
   };
 
@@ -211,6 +238,43 @@ export default function PlayerScreen() {
       onPress={() => playRecommendation(item, index)}
       compact={true}
     />
+  );
+
+  const renderQueueItem = ({ item, index }) => (
+    <View style={styles.queueItem}>
+      <Pressable
+        style={styles.queueSongInfo}
+        onPress={() => playQueueSong(item, index)}
+      >
+        <Image
+          source={{ uri: getImageUrl(item.image, 'small') }}
+          style={styles.queueImage}
+        />
+        <View style={styles.queueTextInfo}>
+          <Text 
+            style={[
+              styles.queueSongTitle,
+              index === playerState.currentIndex && styles.currentSongTitle
+            ]} 
+            numberOfLines={1}
+          >
+            {item.name}
+          </Text>
+          <Text style={styles.queueArtist} numberOfLines={1}>
+            {getArtistNames(item.artists)}
+          </Text>
+        </View>
+      </Pressable>
+      
+      <Pressable
+        style={styles.removeFromQueueButton}
+        onPress={() => removeFromQueue(index)}
+        accessibilityLabel="Remove from queue"
+        accessibilityRole="button"
+      >
+        <X size={16} color="#64748b" />
+      </Pressable>
+    </View>
   );
 
   const renderMoreOptionsModal = () => (
@@ -223,7 +287,7 @@ export default function PlayerScreen() {
       <View style={styles.modalOverlay}>
         <View style={styles.moreOptionsModal}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Bottom sheet</Text>
+            <Text style={styles.modalTitle}>More Options</Text>
             <Pressable
               style={styles.modalCloseButton}
               onPress={() => setShowMoreOptions(false)}
@@ -241,8 +305,8 @@ export default function PlayerScreen() {
                 setShowMoreOptions(false);
                 handleDownloadPress();
               }}
-accessibilityRole="button"
-accessibilityLabel={isDownloaded ? "Remove from downloads" : "Download"}
+              accessibilityRole="button"
+              accessibilityLabel={isDownloaded ? "Remove from downloads" : "Download"}
             >
               {isDownloaded ? <Trash2 size={20} color="#ef4444" /> : <Download size={20} color="#64748b" />}
               <Text style={styles.optionText}>
@@ -256,8 +320,8 @@ accessibilityLabel={isDownloaded ? "Remove from downloads" : "Download"}
                 setShowMoreOptions(false);
                 setShowAddToPlaylist(true);
               }}
-accessibilityRole="button"
-accessibilityLabel="add to playlist"
+              accessibilityRole="button"
+              accessibilityLabel="add to playlist"
             >
               <Plus size={20} color="#64748b" />
               <Text style={styles.optionText}>Add to Playlist</Text>
@@ -269,8 +333,8 @@ accessibilityLabel="add to playlist"
                 setShowMoreOptions(false);
                 setShowSpeedSelection(true);
               }}
-accessibilityRole="button"
-accessibilityLabel="playback speed"
+              accessibilityRole="button"
+              accessibilityLabel="playback speed"
             >
               <Gauge size={20} color="#64748b" />
               <Text style={styles.optionText}>Playback Speed</Text>
@@ -282,8 +346,8 @@ accessibilityLabel="playback speed"
                 setShowMoreOptions(false);
                 toggleFavorite();
               }}
-accessibilityRole="button"
-accessibilityLabel={isFavorite ? "Remove from favorites" : "add to favorites"}
+              accessibilityRole="button"
+              accessibilityLabel={isFavorite ? "Remove from favorites" : "add to favorites"}
             >
               <Heart 
                 size={20} 
@@ -297,22 +361,31 @@ accessibilityLabel={isFavorite ? "Remove from favorites" : "add to favorites"}
 
             <Pressable
               style={[styles.optionItem, isDownloaded && styles.optionItemDisabled]}
+              onPress={() => {
+                if (!isDownloaded) {
+                  setShowMoreOptions(false);
+                  setShowAudioQuality(true);
+                }
+              }}
               disabled={isDownloaded}
-accessibilityRole="button"
-accessibilityLabel={isDownloaded ? "you cant change audio quality, because the song is downloaded" : "Audio Quality"}
+              accessibilityRole="button"
+              accessibilityLabel={isDownloaded ? "you cant change audio quality, because the song is downloaded" : "Audio Quality"}
             >
               <Volume2 size={20} color={isDownloaded ? '#475569' : '#64748b'} />
               <Text style={[styles.optionText, isDownloaded && styles.optionTextDisabled]}>
-                Audio Quality {isDownloaded ? '(Unavailable)' : ''}
+                Audio Quality {isDownloaded ? '(Downloaded)' : ''}
               </Text>
             </Pressable>
 
-            <Pressable style={styles.optionItem} accessibilityRole="button" accessibilityLabel="Remove from playing queue">
-              <ListMusic size={20} color="#64748b" />
-              <Text style={styles.optionText}>Remove from Queue</Text>
-            </Pressable>
-
-            <Pressable style={styles.optionItem} accessibilityRole="button" accessibilityLabel="Help">
+            <Pressable 
+              style={styles.optionItem} 
+              onPress={() => {
+                setShowMoreOptions(false);
+                router.push('/help');
+              }}
+              accessibilityRole="button" 
+              accessibilityLabel="Help"
+            >
               <HelpCircle size={20} color="#64748b" />
               <Text style={styles.optionText}>Help</Text>
             </Pressable>
@@ -326,12 +399,12 @@ accessibilityLabel={isDownloaded ? "you cant change audio quality, because the s
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Sound kit player</Text>
+          <Text style={styles.emptyText}>SoundKit Player</Text>
           <Pressable 
             style={styles.backButton} 
             onPress={() => router.back()}
             accessibilityLabel="Go back"
-accessibilityRole="button"
+            accessibilityRole="button"
           >
             <Text style={styles.backButtonText}>Go Back</Text>
           </Pressable>
@@ -347,7 +420,12 @@ accessibilityRole="button"
         style={styles.gradient}
       >
         <FlatList
-          data={[{ type: 'player' }, ...recommendations.map(song => ({ type: 'recommendation', song }))]}
+          data={[
+            { type: 'player' }, 
+            ...playerState.queue.map((song, index) => ({ type: 'queue', song, index })),
+            { type: 'recommendations-header' },
+            ...recommendations.map(song => ({ type: 'recommendation', song }))
+          ]}
           renderItem={({ item, index }) => {
             if (item.type === 'player') {
               return (
@@ -356,7 +434,7 @@ accessibilityRole="button"
                   <Pressable 
                     style={styles.playerInterface}
                     onPress={() => setShowControls(!showControls)}
-                    accessibilityLabel="Soundkit player"
+                    accessibilityLabel="SoundKit player"
                     accessibilityHint={showControls ? "Double-tap to hide controls" : "Double-tap to show controls"}
                   >
                     {/* Artwork */}
@@ -376,7 +454,7 @@ accessibilityRole="button"
                             style={styles.topControlButton}
                             onPress={() => router.back()}
                             accessibilityLabel="Minimize"
-accessibilityRole="button"
+                            accessibilityRole="button"
                           >
                             <ChevronDown size={24} color="#ffffff" />
                           </Pressable>
@@ -386,7 +464,7 @@ accessibilityRole="button"
                               style={styles.topControlButton}
                               onPress={handleShare}
                               accessibilityLabel="Share"
-accessibilityRole="button"
+                              accessibilityRole="button"
                             >
                               <Share size={24} color="#ffffff" />
                             </Pressable>
@@ -395,7 +473,7 @@ accessibilityRole="button"
                               style={styles.topControlButton}
                               onPress={() => setShowMoreOptions(true)}
                               accessibilityLabel="More options"
-accessibilityRole="button"
+                              accessibilityRole="button"
                             >
                               <MoreHorizontal size={24} color="#ffffff" />
                             </Pressable>
@@ -408,16 +486,16 @@ accessibilityRole="button"
                             style={styles.controlButton}
                             onPress={() => audioPlayer.playPrevious()}
                             accessibilityLabel="Previous"
-accessibilityRole="button"
+                            accessibilityRole="button"
                           >
                             <SkipBack size={28} color="#ffffff" />
                           </Pressable>
                           
                           <Pressable
                             style={styles.controlButton}
-                            onPress={() => audioPlayer.rewind(10)}
-                            accessibilityLabel="Rewind 10 seconds"
-accessibilityRole="button"
+                            onPress={handleRewind}
+                            accessibilityLabel={`Rewind ${settings?.rewindDuration || 10} seconds`}
+                            accessibilityRole="button"
                           >
                             <RotateCcw size={24} color="#ffffff" />
                           </Pressable>
@@ -426,7 +504,7 @@ accessibilityRole="button"
                             style={[styles.controlButton, styles.playButton]}
                             onPress={() => audioPlayer.togglePlayPause()}
                             accessibilityLabel={playerState.isPlaying ? 'Pause' : 'Play'}
-accessibilityRole="button"
+                            accessibilityRole="button"
                           >
                             {playerState.isPlaying ? (
                               <Pause size={32} color="#ffffff" />
@@ -437,9 +515,9 @@ accessibilityRole="button"
                           
                           <Pressable
                             style={styles.controlButton}
-                            onPress={() => audioPlayer.fastForward(10)}
-                            accessibilityLabel="Fast forward 10 seconds"
-accessibilityRole="button"
+                            onPress={handleFastForward}
+                            accessibilityLabel={`Fast forward ${settings?.fastForwardDuration || 10} seconds`}
+                            accessibilityRole="button"
                           >
                             <FastForward size={24} color="#ffffff" />
                           </Pressable>
@@ -448,11 +526,12 @@ accessibilityRole="button"
                             style={styles.controlButton}
                             onPress={() => audioPlayer.playNext()}
                             accessibilityLabel="Next"
-accessibilityRole="button"
+                            accessibilityRole="button"
                           >
                             <SkipForward size={28} color="#ffffff" />
                           </Pressable>
                         </View>
+
                         {/* Progress Bar */}
                         <View style={styles.progressContainer}>
                           <Slider
@@ -465,7 +544,7 @@ accessibilityRole="button"
                             minimumTrackTintColor="#3b82f6"
                             maximumTrackTintColor="rgba(255,255,255,0.3)"
                             thumbStyle={styles.sliderThumb}
-accessibilityLabel={`${formatTime(seekPosition)} of ${formatTime(playerState.duration)}`}
+                            accessibilityLabel={`${formatTime(seekPosition)} of ${formatTime(playerState.duration)}`}
                           />
                           <View style={styles.timeContainer}>
                             <Text style={styles.timeText}>
@@ -474,14 +553,13 @@ accessibilityLabel={`${formatTime(seekPosition)} of ${formatTime(playerState.dur
                           </View>
                         </View>
 
-
                         {/* Secondary Controls */}
                         <View style={styles.secondaryControls}>
                           <Pressable
                             style={styles.secondaryButton}
                             onPress={toggleShuffle}
                             accessibilityLabel={`Shuffle ${playerState.shuffle ? 'on' : 'off'}`}
-accessibilityRole="button"
+                            accessibilityRole="button"
                           >
                             <Shuffle
                               size={20}
@@ -493,7 +571,7 @@ accessibilityRole="button"
                             style={styles.secondaryButton}
                             onPress={toggleRepeat}
                             accessibilityLabel={`Repeat ${playerState.repeat}`}
-accessibilityRole="button"
+                            accessibilityRole="button"
                           >
                             <Repeat
                               size={20}
@@ -530,23 +608,37 @@ accessibilityRole="button"
                   </View>
 
                   {/* Queue Header */}
-                  {recommendations.length > 0 && (
+                  {playerState.queue.length > 0 && (
                     <View style={styles.queueHeader}>
-                      <Text style={styles.queueTitle}>Up Next</Text>
+                      <Text style={styles.queueTitle}>Playing Queue</Text>
                       <Text style={styles.queueSubtitle}>
-                        {recommendations.length} songs
+                        {playerState.queue.length} song{playerState.queue.length !== 1 ? 's' : ''}
                       </Text>
                     </View>
                   )}
                 </View>
               );
+            } else if (item.type === 'queue') {
+              return renderQueueItem({ item: item.song, index: item.index });
+            } else if (item.type === 'recommendations-header') {
+              return recommendations.length > 0 ? (
+                <View style={styles.queueHeader}>
+                  <Text style={styles.queueTitle}>Up Next</Text>
+                  <Text style={styles.queueSubtitle}>
+                    {recommendations.length} song{recommendations.length !== 1 ? 's' : ''}
+                  </Text>
+                </View>
+              ) : null;
             } else {
-              return renderRecommendation({ item: item.song, index: index - 1 });
+              return renderRecommendation({ item: item.song, index: index - playerState.queue.length - 2 });
             }
           }}
-          keyExtractor={(item, index) => 
-            item.type === 'player' ? 'player' : `rec-${item.song.id}-${index}`
-          }
+          keyExtractor={(item, index) => {
+            if (item.type === 'player') return 'player';
+            if (item.type === 'queue') return `queue-${item.song.id}-${item.index}`;
+            if (item.type === 'recommendations-header') return 'recommendations-header';
+            return `rec-${item.song.id}-${index}`;
+          }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         />
@@ -572,6 +664,12 @@ accessibilityRole="button"
         visible={showAddToPlaylist}
         onClose={() => setShowAddToPlaylist(false)}
         song={playerState.currentSong}
+      />
+
+      <AudioQualityModal
+        visible={showAudioQuality}
+        onClose={() => setShowAudioQuality(false)}
+        currentSong={playerState.currentSong}
       />
     </SafeAreaView>
   );
@@ -727,6 +825,45 @@ const styles = StyleSheet.create({
   queueSubtitle: {
     color: '#64748b',
     fontSize: 14,
+  },
+  queueItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1e293b',
+  },
+  queueSongInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  queueImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    marginRight: 16,
+  },
+  queueTextInfo: {
+    flex: 1,
+  },
+  queueSongTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  currentSongTitle: {
+    color: '#3b82f6',
+  },
+  queueArtist: {
+    color: '#64748b',
+    fontSize: 14,
+  },
+  removeFromQueueButton: {
+    padding: 8,
+    borderRadius: 16,
   },
   modalOverlay: {
     flex: 1,
