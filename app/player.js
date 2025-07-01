@@ -8,13 +8,13 @@ import {
   Dimensions,
   FlatList,
   Modal,
-  Share,
+  Share as NativeShare,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Slider from '@react-native-community/slider';
-import { Play, Pause, SkipForward, SkipBack, RotateCcw, FastForward, Heart, Download, Volume2, Repeat, Shuffle, Trash2, MoveHorizontal as MoreHorizontal, ChevronDown, ChevronUp, Plus, Gauge, ListMusic, CircleHelp as HelpCircle, X } from 'lucide-react-native';
+import { Play, Pause, SkipForward, SkipBack, RotateCcw, FastForward, Heart, Download, Volume2, Repeat, Shuffle, Trash2, MoveHorizontal as MoreHorizontal, ChevronDown, ChevronUp, Plus, Gauge, ListMusic, CircleHelp as HelpCircle, X, Share} from 'lucide-react-native';
 import { router } from 'expo-router';
 import { audioPlayer } from '../services/audioPlayer';
 import { storageService } from '../services/storage';
@@ -153,7 +153,7 @@ export default function PlayerScreen() {
           await navigator.clipboard.writeText(shareMessage);
         }
       } else {
-        await Share.share({
+        await NativeShare.share({
           message: shareMessage,
           url: shareUrl,
           title: playerState.currentSong.name,
@@ -223,10 +223,12 @@ export default function PlayerScreen() {
       <View style={styles.modalOverlay}>
         <View style={styles.moreOptionsModal}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>More Options</Text>
+            <Text style={styles.modalTitle}>Bottom sheet</Text>
             <Pressable
               style={styles.modalCloseButton}
               onPress={() => setShowMoreOptions(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
             >
               <X size={24} color="#ffffff" />
             </Pressable>
@@ -239,6 +241,8 @@ export default function PlayerScreen() {
                 setShowMoreOptions(false);
                 handleDownloadPress();
               }}
+accessibilityRole="button"
+accessibilityLabel={isDownloaded ? "Remove from downloads" : "Download"}
             >
               {isDownloaded ? <Trash2 size={20} color="#ef4444" /> : <Download size={20} color="#64748b" />}
               <Text style={styles.optionText}>
@@ -252,6 +256,8 @@ export default function PlayerScreen() {
                 setShowMoreOptions(false);
                 setShowAddToPlaylist(true);
               }}
+accessibilityRole="button"
+accessibilityLabel="add to playlist"
             >
               <Plus size={20} color="#64748b" />
               <Text style={styles.optionText}>Add to Playlist</Text>
@@ -263,6 +269,8 @@ export default function PlayerScreen() {
                 setShowMoreOptions(false);
                 setShowSpeedSelection(true);
               }}
+accessibilityRole="button"
+accessibilityLabel="playback speed"
             >
               <Gauge size={20} color="#64748b" />
               <Text style={styles.optionText}>Playback Speed</Text>
@@ -274,6 +282,8 @@ export default function PlayerScreen() {
                 setShowMoreOptions(false);
                 toggleFavorite();
               }}
+accessibilityRole="button"
+accessibilityLabel={isFavorite ? "Remove from favorites" : "add to favorites"}
             >
               <Heart 
                 size={20} 
@@ -288,6 +298,8 @@ export default function PlayerScreen() {
             <Pressable
               style={[styles.optionItem, isDownloaded && styles.optionItemDisabled]}
               disabled={isDownloaded}
+accessibilityRole="button"
+accessibilityLabel={isDownloaded ? "you cant change audio quality, because the song is downloaded" : "Audio Quality"}
             >
               <Volume2 size={20} color={isDownloaded ? '#475569' : '#64748b'} />
               <Text style={[styles.optionText, isDownloaded && styles.optionTextDisabled]}>
@@ -295,12 +307,12 @@ export default function PlayerScreen() {
               </Text>
             </Pressable>
 
-            <Pressable style={styles.optionItem}>
+            <Pressable style={styles.optionItem} accessibilityRole="button" accessibilityLabel="Remove from playing queue">
               <ListMusic size={20} color="#64748b" />
               <Text style={styles.optionText}>Remove from Queue</Text>
             </Pressable>
 
-            <Pressable style={styles.optionItem}>
+            <Pressable style={styles.optionItem} accessibilityRole="button" accessibilityLabel="Help">
               <HelpCircle size={20} color="#64748b" />
               <Text style={styles.optionText}>Help</Text>
             </Pressable>
@@ -314,11 +326,12 @@ export default function PlayerScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No song playing</Text>
+          <Text style={styles.emptyText}>Sound kit player</Text>
           <Pressable 
             style={styles.backButton} 
             onPress={() => router.back()}
             accessibilityLabel="Go back"
+accessibilityRole="button"
           >
             <Text style={styles.backButtonText}>Go Back</Text>
           </Pressable>
@@ -362,7 +375,8 @@ export default function PlayerScreen() {
                           <Pressable
                             style={styles.topControlButton}
                             onPress={() => router.back()}
-                            accessibilityLabel="Close player"
+                            accessibilityLabel="Minimize"
+accessibilityRole="button"
                           >
                             <ChevronDown size={24} color="#ffffff" />
                           </Pressable>
@@ -371,7 +385,8 @@ export default function PlayerScreen() {
                             <Pressable
                               style={styles.topControlButton}
                               onPress={handleShare}
-                              accessibilityLabel="Share song"
+                              accessibilityLabel="Share"
+accessibilityRole="button"
                             >
                               <Share size={24} color="#ffffff" />
                             </Pressable>
@@ -380,12 +395,64 @@ export default function PlayerScreen() {
                               style={styles.topControlButton}
                               onPress={() => setShowMoreOptions(true)}
                               accessibilityLabel="More options"
+accessibilityRole="button"
                             >
                               <MoreHorizontal size={24} color="#ffffff" />
                             </Pressable>
                           </View>
                         </View>
 
+                        {/* Main Controls - 5 buttons in a row */}
+                        <View style={styles.mainControls}>
+                          <Pressable
+                            style={styles.controlButton}
+                            onPress={() => audioPlayer.playPrevious()}
+                            accessibilityLabel="Previous"
+accessibilityRole="button"
+                          >
+                            <SkipBack size={28} color="#ffffff" />
+                          </Pressable>
+                          
+                          <Pressable
+                            style={styles.controlButton}
+                            onPress={() => audioPlayer.rewind(10)}
+                            accessibilityLabel="Rewind 10 seconds"
+accessibilityRole="button"
+                          >
+                            <RotateCcw size={24} color="#ffffff" />
+                          </Pressable>
+                          
+                          <Pressable
+                            style={[styles.controlButton, styles.playButton]}
+                            onPress={() => audioPlayer.togglePlayPause()}
+                            accessibilityLabel={playerState.isPlaying ? 'Pause' : 'Play'}
+accessibilityRole="button"
+                          >
+                            {playerState.isPlaying ? (
+                              <Pause size={32} color="#ffffff" />
+                            ) : (
+                              <Play size={32} color="#ffffff" />
+                            )}
+                          </Pressable>
+                          
+                          <Pressable
+                            style={styles.controlButton}
+                            onPress={() => audioPlayer.fastForward(10)}
+                            accessibilityLabel="Fast forward 10 seconds"
+accessibilityRole="button"
+                          >
+                            <FastForward size={24} color="#ffffff" />
+                          </Pressable>
+                          
+                          <Pressable
+                            style={styles.controlButton}
+                            onPress={() => audioPlayer.playNext()}
+                            accessibilityLabel="Next"
+accessibilityRole="button"
+                          >
+                            <SkipForward size={28} color="#ffffff" />
+                          </Pressable>
+                        </View>
                         {/* Progress Bar */}
                         <View style={styles.progressContainer}>
                           <Slider
@@ -398,63 +465,15 @@ export default function PlayerScreen() {
                             minimumTrackTintColor="#3b82f6"
                             maximumTrackTintColor="rgba(255,255,255,0.3)"
                             thumbStyle={styles.sliderThumb}
+accessibilityLabel={`${formatTime(seekPosition)} of ${formatTime(playerState.duration)}`}
                           />
                           <View style={styles.timeContainer}>
                             <Text style={styles.timeText}>
-                              {formatTime(seekPosition)}
-                            </Text>
-                            <Text style={styles.timeText}>
-                              {formatTime(playerState.duration)}
+                              {formatTime(seekPosition)} of {formatTime(playerState.duration)}
                             </Text>
                           </View>
                         </View>
 
-                        {/* Main Controls - 5 buttons in a row */}
-                        <View style={styles.mainControls}>
-                          <Pressable
-                            style={styles.controlButton}
-                            onPress={() => audioPlayer.playPrevious()}
-                            accessibilityLabel="Previous song"
-                          >
-                            <SkipBack size={28} color="#ffffff" />
-                          </Pressable>
-                          
-                          <Pressable
-                            style={styles.controlButton}
-                            onPress={() => audioPlayer.rewind(10)}
-                            accessibilityLabel="Rewind 10 seconds"
-                          >
-                            <RotateCcw size={24} color="#ffffff" />
-                          </Pressable>
-                          
-                          <Pressable
-                            style={[styles.controlButton, styles.playButton]}
-                            onPress={() => audioPlayer.togglePlayPause()}
-                            accessibilityLabel={playerState.isPlaying ? 'Pause' : 'Play'}
-                          >
-                            {playerState.isPlaying ? (
-                              <Pause size={32} color="#ffffff" />
-                            ) : (
-                              <Play size={32} color="#ffffff" />
-                            )}
-                          </Pressable>
-                          
-                          <Pressable
-                            style={styles.controlButton}
-                            onPress={() => audioPlayer.fastForward(30)}
-                            accessibilityLabel="Fast forward 30 seconds"
-                          >
-                            <FastForward size={24} color="#ffffff" />
-                          </Pressable>
-                          
-                          <Pressable
-                            style={styles.controlButton}
-                            onPress={() => audioPlayer.playNext()}
-                            accessibilityLabel="Next song"
-                          >
-                            <SkipForward size={28} color="#ffffff" />
-                          </Pressable>
-                        </View>
 
                         {/* Secondary Controls */}
                         <View style={styles.secondaryControls}>
@@ -462,6 +481,7 @@ export default function PlayerScreen() {
                             style={styles.secondaryButton}
                             onPress={toggleShuffle}
                             accessibilityLabel={`Shuffle ${playerState.shuffle ? 'on' : 'off'}`}
+accessibilityRole="button"
                           >
                             <Shuffle
                               size={20}
@@ -473,6 +493,7 @@ export default function PlayerScreen() {
                             style={styles.secondaryButton}
                             onPress={toggleRepeat}
                             accessibilityLabel={`Repeat ${playerState.repeat}`}
+accessibilityRole="button"
                           >
                             <Repeat
                               size={20}

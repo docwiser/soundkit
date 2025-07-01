@@ -181,6 +181,8 @@ export default function SearchScreen() {
         }
       }}
       accessibilityLabel={`Filter by ${label}`}
+accessibilityRole="button"
+accessibilityState={{selected: type == searchType}}
     >
       <Text
         style={[
@@ -234,7 +236,7 @@ export default function SearchScreen() {
       return (
         <View style={styles.emptyContainer}>
           <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.emptyText}>Searching...</Text>
+          <Text style={styles.emptyText}>Searching the best match for you...</Text>
         </View>
       );
     }
@@ -245,6 +247,10 @@ export default function SearchScreen() {
           <Search size={48} color="#64748b" />
           <Text style={styles.emptyText}>Search for songs, albums, artists, and playlists</Text>
           <Text style={styles.emptySubtext}>Try using voice search for hands-free searching</Text>
+<Text style={styles.emptyText}>Find your favorite music by typing a song, artist, or album</Text>
+<Text style={styles.emptyText}>Start typing to discover tracks and trending hits</Text>
+<Text style={styles.emptyText}>Find music by mood, genre, or language in seconds</Text>
+<Text style={styles.emptyText}>Browse the world of audio. Search to get started</Text>
         </View>
       );
     }
@@ -252,7 +258,11 @@ export default function SearchScreen() {
     if (results.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No results found for "{searchQuery}"</Text>
+<Text style={styles.emptyText}>No search yet. Try typing a song or artist you love</Text>
+<Text style={styles.emptyText}>Find your favorite music by typing a song, artist, or album</Text>
+<Text style={styles.emptyText}>Start typing to discover tracks and trending hits</Text>
+<Text style={styles.emptyText}>Find music by mood, genre, or language in seconds</Text>
+<Text style={styles.emptyText}>Browse the world of audio. Search to get started</Text>
         </View>
       );
     }
@@ -274,13 +284,13 @@ export default function SearchScreen() {
               onChangeText={setSearchQuery}
               onSubmitEditing={handleSearchSubmit}
               returnKeyType="search"
-              accessibilityLabel="Search input"
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity
                 style={styles.clearButton}
                 onPress={clearSearch}
                 accessibilityLabel="Clear search"
+accessibilityRole="button"
               >
                 <X size={20} color="#64748b" />
               </TouchableOpacity>
@@ -288,7 +298,8 @@ export default function SearchScreen() {
             <TouchableOpacity
               style={[styles.voiceButton, isListening && styles.voiceButtonActive]}
               onPress={isListening ? stopVoiceSearch : startVoiceSearch}
-              accessibilityLabel={isListening ? 'Stop voice search' : 'Start voice search'}
+              accessibilityLabel={isListening ? 'Stop listening' : 'Voice search'}
+accessibilityRole="button"
             >
               {isListening ? (
                 <MicOff size={20} color="#ef4444" />
@@ -300,17 +311,19 @@ export default function SearchScreen() {
               style={styles.searchButton}
               onPress={handleSearchSubmit}
               accessibilityLabel="Search"
+accessibilityRole="button"
             >
               <Search size={20} color="#ffffff" />
             </TouchableOpacity>
           </View>
-
+{false && (
           <View style={styles.filtersContainer}>
             {renderSearchTypeButton(SEARCH_TYPES.SONGS, 'Songs')}
             {renderSearchTypeButton(SEARCH_TYPES.ALBUMS, 'Albums')}
             {renderSearchTypeButton(SEARCH_TYPES.ARTISTS, 'Artists')}
             {renderSearchTypeButton(SEARCH_TYPES.PLAYLISTS, 'Playlists')}
           </View>
+)}
         </View>
 
         {totalResults > 0 && (
@@ -322,7 +335,8 @@ export default function SearchScreen() {
               <TouchableOpacity
                 style={styles.playAllButton}
                 onPress={() => playSearchResults(0)}
-                accessibilityLabel="Play all search results"
+                accessibilityLabel="play all"
+accessibilityRole="button"
               >
                 <Text style={styles.playAllText}>Play All</Text>
               </TouchableOpacity>

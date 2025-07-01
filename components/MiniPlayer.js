@@ -47,8 +47,6 @@ export default function MiniPlayer() {
     <Pressable
       style={styles.container}
       onPress={handleMiniPlayerPress}
-      accessibilityLabel="Soundkit player"
-      accessibilityHint="Double-tap to show controls"
     >
       <BlurView style={styles.blur} intensity={80} tint="dark">
         <View style={styles.content}>
@@ -73,7 +71,8 @@ export default function MiniPlayer() {
                 e.stopPropagation();
                 audioPlayer.playPrevious();
               }}
-              accessibilityLabel="Previous song"
+              accessibilityLabel="Previous"
+accessibilityRole="button"
             >
               <SkipBack size={20} color="#ffffff" />
             </Pressable>
@@ -85,6 +84,7 @@ export default function MiniPlayer() {
                 audioPlayer.togglePlayPause();
               }}
               accessibilityLabel={playerState.isPlaying ? 'Pause' : 'Play'}
+accessibilityRole="button"
             >
               {playerState.isPlaying ? (
                 <Pause size={20} color="#ffffff" />
@@ -99,7 +99,8 @@ export default function MiniPlayer() {
                 e.stopPropagation();
                 audioPlayer.playNext();
               }}
-              accessibilityLabel="Next song"
+              accessibilityLabel="Next"
+accessibilityRole="button"
             >
               <SkipForward size={20} color="#ffffff" />
             </Pressable>
@@ -110,7 +111,8 @@ export default function MiniPlayer() {
                 e.stopPropagation();
                 closeMiniPlayer();
               }}
-              accessibilityLabel="Close player"
+              accessibilityLabel="Close mini player"
+accessibilityRole="button"
             >
               <X size={20} color="#ffffff" />
             </Pressable>

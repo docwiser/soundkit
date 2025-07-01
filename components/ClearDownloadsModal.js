@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Modal,
   Pressable,
+ScrollView,
 } from 'react-native';
 import { TriangleAlert as AlertTriangle, X } from 'lucide-react-native';
 
@@ -30,6 +31,7 @@ export default function ClearDownloadsModal({
               style={styles.closeButton}
               onPress={onClose}
               accessibilityLabel="Close"
+accessibilityRole="button"
             >
               <X size={24} color="#ffffff" />
             </Pressable>
@@ -40,6 +42,19 @@ export default function ClearDownloadsModal({
             <Text style={styles.message}>
               Are you sure you want to clear all downloaded songs? This action cannot be undone and will free up storage space on your device.
             </Text>
+<ScrollView>
+<Text style={styles.message}>
+  Removing downloaded files will not delete your playlists or favorites. You can re-download them anytime from your library.
+</Text>
+
+<Text style={styles.message}>
+  Downloads help you listen offline, but they take up space. Clearing them is a good way to manage storage.
+</Text>
+
+<Text style={styles.message}>
+  Freeing up space may improve app performance on low-storage devices. Consider clearing downloads regularly.
+</Text>
+</ScrollView>
           </View>
 
           <View style={styles.actions}>
@@ -47,6 +62,7 @@ export default function ClearDownloadsModal({
               style={[styles.button, styles.cancelButton]}
               onPress={onClose}
               accessibilityLabel="Cancel"
+accessibilityRole="button"
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </Pressable>
@@ -54,6 +70,7 @@ export default function ClearDownloadsModal({
               style={[styles.button, styles.confirmButton]}
               onPress={onConfirm}
               accessibilityLabel="Clear downloads"
+accessibilityRole="button"
             >
               <Text style={styles.confirmButtonText}>Clear All</Text>
             </Pressable>

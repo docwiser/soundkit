@@ -63,7 +63,8 @@ export default function ActionMenuModal({
             <Pressable
               style={styles.closeButton}
               onPress={onClose}
-              accessibilityLabel="Close action menu"
+              accessibilityLabel="Close"
+accessibilityRole="button"
             >
               <X size={24} color="#64748b" />
             </Pressable>
@@ -109,7 +110,7 @@ export default function ActionMenuModal({
             <Pressable
               style={styles.actionItem}
               onPress={handleShare}
-              accessibilityLabel="Share song"
+              accessibilityLabel="Share"
             >
               <ShareIcon size={20} color="#64748b" />
               <Text style={styles.actionText}>Share</Text>

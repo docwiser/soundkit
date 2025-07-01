@@ -160,6 +160,7 @@ export default function SettingsScreen() {
             ]}
             onPress={() => onSelect(option.value)}
             accessibilityLabel={option.label}
+            aria-selected={option.value == currentValue}
           >
             <Text
               style={[
@@ -217,6 +218,7 @@ export default function SettingsScreen() {
           style={styles.backButton} 
           onPress={() => router.back()}
           accessibilityLabel="Back"
+          accessibilityRole="button"
         >
           <ChevronLeft size={24} color="#ffffff" />
         </Pressable>

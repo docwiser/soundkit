@@ -109,6 +109,8 @@ export default function LibraryScreen() {
         activeSection === section && styles.sectionButtonActive,
       ]}
       onPress={() => setActiveSection(section)}
+accessibilityRole="button"
+accessibilityState={{selected: activeSection == section}}
     >
       {icon}
       <Text
@@ -149,10 +151,10 @@ export default function LibraryScreen() {
       onPress={() => {
         const songs = activeSection === LIBRARY_SECTIONS.DOWNLOADED ? downloaded : history;
         playSongs(songs, index);
+router.push("/player");
       }}
     />
   );
-
   const renderNavigationItem = ({ item }) => (
     <Pressable
       style={styles.navigationItem}
@@ -276,7 +278,7 @@ export default function LibraryScreen() {
     <NetworkStatus>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Library</Text>
+          <Text accessibilityRole="header" style={styles.headerTitle}>Library</Text>
         </View>
 
         <View style={styles.sectionsContainer}>

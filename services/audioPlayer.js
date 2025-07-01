@@ -271,7 +271,7 @@ class AudioPlayerService {
       }
 
       const filename = `${song.id}.mp3`;
-      const localUri = FileSystem.documentDirectory + filename;
+      const localUri = FileSystem.downloadDirectory + "soundkit/" + filename;
 
       const download = FileSystem.createDownloadResumable(
         targetUrl,

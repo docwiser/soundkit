@@ -42,6 +42,12 @@ export default function NetworkStatus({ children }) {
           <Text style={styles.offlineText}>
             Please check your internet connection and try again.
           </Text>
+<Text style={styles.offlineText}>
+  No network detected. Make sure Wi-Fi or mobile data is turned on.
+</Text>
+<Text style={styles.offlineText}>
+you can stil listen downloaded songs. we'll Retry once you’re back online.
+</Text>
         </View>
       </View>
     );
@@ -66,7 +72,7 @@ export default function NetworkStatus({ children }) {
             ) : (
               <WifiOff size={20} color="#ffffff" />
             )}
-            <Text style={styles.bannerText}>
+            <Text accessibilityLiveRegion="assertive" style={styles.bannerText}>
               {hasInternet ? 'Back online' : 'No internet connection'}
             </Text>
           </View>

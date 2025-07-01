@@ -48,7 +48,7 @@ export default function CategorySelector({ selectedCategory, onCategorySelect })
         selectedCategory === item.id && styles.categoryButtonActive,
       ]}
       onPress={() => onCategorySelect(item)}
-      accessibilityLabel={`Select ${item.name} category`}
+      accessibilityLabel={item.name}
       accessibilityRole="button"
       accessibilityState={{ selected: selectedCategory === item.id }}
     >
@@ -70,7 +70,7 @@ export default function CategorySelector({ selectedCategory, onCategorySelect })
         onCategorySelect(item);
         setShowMoreModal(false);
       }}
-      accessibilityLabel={`Select ${item.name} category`}
+      accessibilityLabel={item.name}
       accessibilityRole="button"
     >
       <Text style={styles.moreCategoryText}>{item.name}</Text>
@@ -86,13 +86,11 @@ export default function CategorySelector({ selectedCategory, onCategorySelect })
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.categoriesList}
-        accessibilityLabel="Music categories"
       />
-      
-      <TouchableOpacity
+            <TouchableOpacity
         style={styles.moreButton}
         onPress={() => setShowMoreModal(true)}
-        accessibilityLabel="Show more categories"
+        accessibilityLabel="More"
         accessibilityRole="button"
       >
         <Text style={styles.moreButtonText}>More</Text>
@@ -107,11 +105,11 @@ export default function CategorySelector({ selectedCategory, onCategorySelect })
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>More Categories</Text>
+              <Text style={styles.modalTitle}>More collections</Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setShowMoreModal(false)}
-                accessibilityLabel="Close categories modal"
+                accessibilityLabel="Close Collections"
                 accessibilityRole="button"
               >
                 <X size={24} color="#64748b" />
@@ -124,7 +122,6 @@ export default function CategorySelector({ selectedCategory, onCategorySelect })
               keyExtractor={(item) => item.id}
               numColumns={2}
               contentContainerStyle={styles.moreCategoriesList}
-              accessibilityLabel="Additional music categories"
             />
           </View>
         </View>

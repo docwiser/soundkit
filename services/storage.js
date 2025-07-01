@@ -167,13 +167,13 @@ export const storageService = {
     try {
       const settings = await AsyncStorage.getItem(KEYS.SETTINGS);
       return settings ? JSON.parse(settings) : {
-        audioQuality: 'high',
+        audioQuality: 'medium',
         thumbnailSize: 'medium',
         rewindDuration: 10,
-        fastForwardDuration: 30,
+        fastForwardDuration: 10,
         playbackSpeed: 1.0,
         autoplay: true,
-        downloadQuality: 'high',
+        downloadQuality: 'medium',
         darkMode: true
       };
     } catch (error) {

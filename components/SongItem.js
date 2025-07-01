@@ -111,9 +111,9 @@ export default function SongItem({
     // Time ago or year
     if (song.playedAt) {
       const timeAgo = formatTimeAgo(song.playedAt);
-      parts.push(timeAgo);
+      parts.push(`Last played ${timeAgo}`);
     } else if (song.year) {
-      parts.push(formatSongYear(song.year));
+      parts.push(`Released ${formatSongYear(song.year)}`);
     }
     
     return parts.join(' • ');
@@ -151,7 +151,7 @@ export default function SongItem({
               }}
               disabled={isDownloading}
               accessibilityRole="button"
-              accessibilityLabel={isDownloaded ? 'Remove download' : 'Download song'}
+              accessibilityLabel={isDownloaded ? 'Remove download' : 'Download'}
             >
               {isDownloading ? (
                 <DownloadProgress progress={downloadProgress} visible={true} />

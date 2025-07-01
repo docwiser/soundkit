@@ -67,7 +67,6 @@ export default function AddToPlaylistModal({ visible, onClose, song }) {
       style={styles.playlistItem}
       onPress={() => addToPlaylist(item.id)}
       accessibilityLabel={`Add to ${item.name} playlist`}
-      accessibilityRole="button"
     >
       <View style={styles.playlistIcon}>
         <Music size={20} color="#3b82f6" />
@@ -95,7 +94,7 @@ export default function AddToPlaylistModal({ visible, onClose, song }) {
             <TouchableOpacity
               style={styles.closeButton}
               onPress={onClose}
-              accessibilityLabel="Close modal"
+              accessibilityLabel="Close"
               accessibilityRole="button"
             >
               <X size={24} color="#64748b" />
@@ -144,6 +143,7 @@ export default function AddToPlaylistModal({ visible, onClose, song }) {
           ) : (
             <View style={styles.createForm}>
               <View style={styles.inputContainer}>
+<Text>create a playlist to mix your own variation.</Text>
                 <Text style={styles.label}>Playlist Name *</Text>
                 <TextInput
                   style={styles.input}
@@ -152,7 +152,6 @@ export default function AddToPlaylistModal({ visible, onClose, song }) {
                   placeholder="Enter playlist name"
                   placeholderTextColor="#64748b"
                   maxLength={100}
-                  accessibilityLabel="Playlist name"
                 />
               </View>
 
@@ -167,7 +166,6 @@ export default function AddToPlaylistModal({ visible, onClose, song }) {
                   multiline
                   numberOfLines={3}
                   maxLength={500}
-                  accessibilityLabel="Playlist description"
                 />
               </View>
 

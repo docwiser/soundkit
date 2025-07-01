@@ -14,7 +14,7 @@ export default function PrivacyScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()} accessibilityLabel="Back">
+        <Pressable style={styles.backButton} onPress={() => router.back()} accessibilityLabel="Back" accessibilityRole="button">
           <ChevronLeft size={24} color="#ffffff" />
         </Pressable>
         <Text accessibilityRole="header" style={styles.headerTitle}>Privacy Policy</Text>

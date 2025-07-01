@@ -133,6 +133,7 @@ export default function HomeScreen() {
           style={styles.topMenuButton}
           onPress={navigateToManagePlaylistsDownloads}
           accessibilityLabel="Manage playlists and downloads"
+accessibilityRole="button"
         >
           <FolderOpen size={20} color="#ffffff" />
           <Text style={styles.topMenuText}>Manage</Text>
@@ -142,6 +143,7 @@ export default function HomeScreen() {
           style={styles.settingsButton}
           onPress={navigateToSettings}
           accessibilityLabel="Settings"
+accessibilityRole="button"
         >
           <Settings size={20} color="#ffffff" />
         </Pressable>
@@ -150,6 +152,7 @@ export default function HomeScreen() {
           style={styles.topMenuButton}
           onPress={navigateToSearch}
           accessibilityLabel="Search"
+accessibilityRole="button"
         >
           <Search size={20} color="#ffffff" />
           <Text style={styles.topMenuText}>Search</Text>
@@ -164,11 +167,11 @@ export default function HomeScreen() {
 
       {/* Section Header */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>
+        <Text style={styles.sectionTitle} accessibilityRole="header">
           {getCategoryDisplayName(selectedCategory)}
         </Text>
         <Text style={styles.sectionSubtitle}>
-          {songs.length} song{songs.length !== 1 ? 's' : ''}
+          Showing top {songs.length} song{songs.length !== 1 ? 's' : ''} (scroll to fetch more songs)
         </Text>
       </View>
     </View>
@@ -205,7 +208,7 @@ export default function HomeScreen() {
         <SafeAreaView style={styles.container}>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#3b82f6" />
-            <Text style={styles.loadingText}>Loading music...</Text>
+            <Text style={styles.loadingText}>just a moment, Choosing the best music for you...</Text>
           </View>
         </SafeAreaView>
       </NetworkStatus>

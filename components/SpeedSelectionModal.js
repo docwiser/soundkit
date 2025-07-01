@@ -15,7 +15,12 @@ const SPEED_OPTIONS = [
   { label: '1x (Normal)', value: 1.0 },
   { label: '1.25x', value: 1.25 },
   { label: '1.5x', value: 1.5 },
+{label: "1.75x", value: 1.75},
   { label: '2x', value: 2.0 },
+{label: "2.25x", value: 2.25},
+{label: "2.5x", value: 2.5},
+{label: "2.75x", value: 2.75},
+{label: "3x", value: 3.0},
 ];
 
 export default function SpeedSelectionModal({
@@ -39,6 +44,7 @@ export default function SpeedSelectionModal({
               style={styles.closeButton}
               onPress={onClose}
               accessibilityLabel="Close"
+accessibilityRole="button"
             >
               <X size={24} color="#ffffff" />
             </Pressable>
@@ -53,7 +59,8 @@ export default function SpeedSelectionModal({
                   currentSpeed === option.value && styles.optionButtonActive,
                 ]}
                 onPress={() => onSelectSpeed(option.value)}
-                accessibilityLabel={`Select ${option.label} speed`}
+                accessibilityLabel={option.label}
+accessibilityState={{selected: currentSpeed == option.value}}
               >
                 <Text
                   style={[

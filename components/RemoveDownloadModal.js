@@ -31,6 +31,7 @@ export default function RemoveDownloadModal({
               style={styles.closeButton}
               onPress={onClose}
               accessibilityLabel="Close"
+accessibilityRole="button"
             >
               <X size={24} color="#ffffff" />
             </Pressable>
@@ -48,6 +49,7 @@ export default function RemoveDownloadModal({
               style={[styles.button, styles.cancelButton]}
               onPress={onClose}
               accessibilityLabel="Cancel"
+accessibilityRole="button"
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </Pressable>
@@ -55,6 +57,7 @@ export default function RemoveDownloadModal({
               style={[styles.button, styles.confirmButton]}
               onPress={onConfirm}
               accessibilityLabel="Remove download"
+accessibilityRole="button"
             >
               <Text style={styles.confirmButtonText}>Remove</Text>
             </Pressable>
